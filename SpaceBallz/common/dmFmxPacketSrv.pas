@@ -97,8 +97,6 @@ LockQ:=TCriticalSection.Create;
 fLogList:=tStringList.Create;
 fPacketQue:=TQueue<tPacketData>.Create;
 GameData:=tGameData.Create;
-
-
 srvSock.Proto:='tcp';
 srvSock.Port:=ServerPort;
 srvSock.Addr:=ServerIp;
@@ -149,15 +147,18 @@ begin
  except on e:EFOpenError do exit;   //shit, nothing to do but leave
  end;
 
- SetLength(shit,FileOfShit.Size);
- FileOfShit.Position:=0;
- FileOfShit.Read(shit[0],Length(shit));
- try
- GameData.Take(shit);
- finally
- FileOfShit.Free;
- SetLength(shit,0);
- end;
+ if FileOfShit.Size>0 then
+  begin
+   SetLength(shit,FileOfShit.Size);
+   FileOfShit.Position:=0;
+   FileOfShit.Read(shit[0],Length(shit));
+    try
+     GameData.Take(shit);
+    finally
+     FileOfShit.Free;
+     SetLength(shit,0);
+    end;
+  end;
 end;
 
 //does it match our packet identifier
@@ -356,12 +357,14 @@ end;
 procedure TSrvCommsDM.piSendGameDef(Client: TPacketClient);
 var
 aPacket:TGameDefinitionPacket;
+gd:tGameDefinitionRec;
 begin
    FillPacketIdent(aPacket.hdr.Ident);
    aPacket.hdr.Command:=CMD_DEF;
    aPacket.hdr.Option:=0;
    aPacket.hdr.DataSize:=SizeOf(tGameDefinitionRec);
-   Move(GameData.GameDef,aPacket.gameDef,SizeOf(tGameDefinitionRec));
+   gd:=GameData.GameDef;
+   Move(gd,aPacket.gameDef,SizeOf(tGameDefinitionRec));
    Client.Send(@aPacket,SizeOf(TGameDefinitionPacket));
 end;
 

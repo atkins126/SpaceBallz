@@ -14,7 +14,7 @@ interface
 uses
   System.SysUtils, System.Types, System.UITypes, System.Classes, System.Variants,
   FMX.Types, FMX.Controls, FMX.Forms3D, FMX.Types3D, FMX.Forms, FMX.Graphics,
-  FMX.Dialogs,FMX.MaterialSources,FMX.Objects,FMX.Layers3D,FMX.Objects3D,
+  FMX.Dialogs,FMX.MaterialSources,FMX.Objects,FMX.Layers3D,FMX.Objects3D,FMX.TextLayout.GPU,
   System.UIConsts,dmMaterials,System.SyncObjs, System.Math.Vectors,System.IniFiles,System.IOUtils,
   FMX.Controls3D,FMX.Platform{$IFDEF ANDROID},FMX.Platform.Android{$ENDIF},
   uDlg3dCtrls,uSpaceBallz,uDlg3dTextures,uGlobs;
@@ -42,7 +42,15 @@ implementation
 {$R *.fmx}
 
 uses
-  uPacketClientDm;
+  uPacketClientDm,uGameSound;
+
+
+procedure WiggleHandle;
+begin
+{$IF RTLVersion111}
+TGPUObjectsPool.Instance.Free;
+{$ENDIF}
+end;
 
 
 
@@ -98,6 +106,7 @@ begin
   MaterialsDm.Free;
 
 
+    GameSound.Free;
 
   PacketCli.Free;
 
@@ -118,6 +127,15 @@ aIni.Free;
   {$IFDEF ANDROID}
   MainActivity.finish;
   {$ENDIF}
+
+
+  {$IFDEF MSWINDOWS}
+    WiggleHandle;
+  {$ENDIF}
+
+
+
+
 end;
 
 procedure TMainFrm.Form3DCreate(Sender: TObject);
@@ -133,6 +151,16 @@ begin
    DlgMaterial:=tDlgMaterial.Create(self);//holds pics
 
    PacketCli:=tPacketClientDM.Create(self);
+
+{$IFDEF ANDROID}
+//location of sound file for robots
+SoundPath:=tPath.GetDocumentsPath;
+{$ENDIF}
+
+{$IFDEF MSWINDOWS}
+SoundPath:=ExtractFilePath(ParamStr(0));
+{$ENDIF}
+
 
 DataPath:=TPath.GetHomePath;
 DataPath:=TPath.Combine(DataPath,'SpaceBallz');
@@ -172,6 +200,23 @@ aIni.Free;
 
       //everybody scales!!
       CurrentScale:=GetScreenScale;
+
+  GameSound:=tGameSound.Create;
+  //load sound effects
+  if TFile.Exists(TPath.Combine(SoundPath,'womp.wav')) then
+    GameSound.Add(TPath.Combine(SoundPath,'womp.wav'),'womp');
+  if TFile.Exists(TPath.Combine(SoundPath,'womp2.wav')) then
+    GameSound.Add(TPath.Combine(SoundPath,'womp2.wav'),'womp2');
+  if TFile.Exists(TPath.Combine(SoundPath,'warning_horn.wav')) then
+    GameSound.Add(TPath.Combine(SoundPath,'warning_horn.wav'),'warning');
+  if TFile.Exists(TPath.Combine(SoundPath,'cannon_x.wav')) then
+    GameSound.Add(TPath.Combine(SoundPath,'cannon_x.wav'),'cannon');
+  if TFile.Exists(TPath.Combine(SoundPath,'buzzer_x.wav')) then
+    GameSound.Add(TPath.Combine(SoundPath,'buzzer_x.wav'),'buzzer');
+   //load background music
+  if TFile.Exists(TPath.Combine(SoundPath,'music.mp3')) then
+    GameSound.MusicFile:=TPath.Combine(SoundPath,'music.mp3');
+
 
      {Berlin gotta ya!!
        don't trunc and replace / with div
